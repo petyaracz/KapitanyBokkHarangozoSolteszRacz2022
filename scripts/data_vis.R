@@ -101,6 +101,15 @@ dct %>%
   cor() %>% 
   corrplot::corrplot(method = 'number')
 
+## ~ per group:
+cors = dct %>% 
+  group_by(group_type) %>% 
+  nest() %>% 
+  mutate(
+    cor = map(data, ~ cor(.)),
+    corrplot = map(cor, ~ corrplot::corrplot(., method = 'number'))
+  )
+
 ## predictors across groups:
 dct %>% 
   pivot_longer(- group_type) %>% 
