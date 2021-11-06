@@ -151,7 +151,7 @@ dct %>%
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank()
   ) +
-  facet_wrap( ~ name ) +
+  facet_wrap( ~ name, ncol = 3) +
   ylab('scaled value') +
   xlab('group type')
-ggsave('vis/text_var_groups.pdf', width = 12, height = 6)
+ggsave('vis/text_var_groups.pdf', width = 12, height = 12)
