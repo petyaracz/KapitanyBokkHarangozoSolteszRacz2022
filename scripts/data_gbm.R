@@ -88,7 +88,8 @@ rf1 = h2o.randomForest(
   nfolds = 4,
   ntrees = 200,
   stopping_rounds = 2,
-  score_each_iteration = T
+  score_each_iteration = T,
+  seed = 1
 ) # parameters were made up
 
 rf2 = h2o.randomForest(
@@ -98,7 +99,8 @@ rf2 = h2o.randomForest(
   nfolds = 4,
   ntrees = 200,
   stopping_rounds = 2,
-  score_each_iteration = T
+  score_each_iteration = T,
+  seed = 1
 )
 
 rf3 = h2o.randomForest(
@@ -108,13 +110,14 @@ rf3 = h2o.randomForest(
   nfolds = 4,
   ntrees = 200,
   stopping_rounds = 2,
-  score_each_iteration = T
+  score_each_iteration = T,
+  seed = 1
 )
 
 # check accuracy
-h2o.auc(h2o.performance(rf1, xval = TRUE)) # .86
-h2o.auc(h2o.performance(rf2, xval = TRUE)) # .73
-h2o.auc(h2o.performance(rf3, xval = TRUE)) # .53
+h2o.auc(h2o.performance(rf1, xval = TRUE)) # .71
+h2o.auc(h2o.performance(rf2, xval = TRUE)) # .78
+h2o.auc(h2o.performance(rf3, xval = TRUE)) # .45
 
 # save model
 h2o.saveModel(rf1, 'models')
