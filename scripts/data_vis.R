@@ -6,7 +6,7 @@ set.seed(1337)
 
 # -- header -- #
 
-setwd('~/Github/KapitanyRacz2022')
+setwd('~/Github/KapitanyBokkHarangozoSolteszRacz2022/')
 
 library(tidyverse)
 library(magrittr)
@@ -63,7 +63,19 @@ dco = d2 %>%
 # text variables only
 dct = d2 %>% 
   filter(id != 'ri20re') %>% # this person didn't write anything :(
-  select(group_type,all_of(text_vars)) 
+  select(group_type,all_of(text_vars)) %>% 
+  rename(
+    'Syntactic simplicity' = Syntac_simp,
+    'Word concreteness' = Word_conc,
+    'Referential cohesion' = Ref_coh,
+    'Lexical density' = Lexical_dens,
+    'Ratio of unique content words' = Unique_con, 
+    'Ratio of determiners' = Determiners,
+    'Ratio of demonstratives' = Dem_att,
+    'Ratio of possessive pronouns' = Poss_2,
+    'Syntactic complexity' = Synt_comp2,
+    'Emotional sensitivity' = Emot_sens
+  )
 
 # --- vis --- #
 
@@ -97,7 +109,7 @@ ggsave('vis/des_olef_groups.pdf', width = 12, height = 6)
 
 ## correlation matrix of predictors:
 dct %>% 
-  select(all_of(text_vars)) %>% 
+  select(-group_type) %>% 
   cor() %>% 
   corrplot::corrplot(method = 'number')
 

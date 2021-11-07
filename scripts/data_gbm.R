@@ -6,7 +6,7 @@ set.seed(1337)
 
 # -- header -- #
 
-setwd('~/Github/KapitanyRacz2022')
+setwd('~/Github/KapitanyBokkHarangozoSolteszRacz2022/')
 
 library(tidyverse)
 library(magrittr)
@@ -208,46 +208,98 @@ h2o.auc(h2o.performance(fit3, xval = TRUE)) # for cv
 h2o.varimp(fit1)
 h2o.varimp(fit2)
 h2o.varimp(fit3)
-  
+
+########################################################################
+
+path1 = '~/Github/KapitanyBokkHarangozoSolteszRacz2022/models/gbm_grid1_model_235'
+path2 = '~/Github/KapitanyBokkHarangozoSolteszRacz2022/models/gbm_grid2_model_492'
+path3 = '~/Github/KapitanyBokkHarangozoSolteszRacz2022/models/gbm_grid3_model_117'
+
+fit1 = h2o.loadModel(normalizePath(path1))
+fit2 = h2o.loadModel(normalizePath(path2))
+fit3 = h2o.loadModel(normalizePath(path3))
+
 # -- vis -- #
 
 # build three plots of variable importance in % for the three models, with 
 # variables ordered across importance
 p1 = h2o.varimp(fit1) %>% 
   as_tibble() %>% 
-  mutate(variable = fct_reorder(variable,percentage)) %>% 
-  ggplot(aes(variable,percentage*100)) +
+  mutate(
+    variable2 = case_when(
+      variable == 'Narrativity' ~ 'Narrativity',
+      variable == 'Syntac_simp' ~ 'Syntactic simplicity',
+      variable == 'Word_conc' ~ 'Word concreteness',
+      variable == 'Ref_coh' ~ 'Referential cohesion',
+      variable == 'Lexical_dens' ~ 'Lexical density',
+      variable == 'Unique_con' ~ 'Ratio of unique content words',
+      variable == 'Determiners' ~ 'Ratio of determiners',
+      variable == 'Dem_att' ~ 'Ratio of demonstratives',
+      variable == 'Poss_2' ~ 'Ratio of possessive pronouns',
+      variable == 'Synt_comp2' ~ 'Syntactic complexity',
+      variable == 'Emot_sens' ~ 'Emotional sensitivity'
+    ) %>% fct_reorder(percentage)
+  ) %>% 
+  ggplot(aes(variable2,percentage*100)) +
   geom_col() +
   theme_few() +
   xlab('text variable') +
   ylab('variable percentage') +
   ylim(0,60) +
   coord_flip() +
-  ggtitle('Control / Schizophrenia ~ text variables')
+  ggtitle('Control / Schizophrenia ~\ntext variables')
 
 p2 = h2o.varimp(fit2) %>% 
   as_tibble() %>% 
-  mutate(variable = fct_reorder(variable,percentage)) %>% 
-  ggplot(aes(variable,percentage*100)) +
+  mutate(
+    variable2 = case_when(
+      variable == 'Narrativity' ~ 'Narrativity',
+      variable == 'Syntac_simp' ~ 'Syntactic simplicity',
+      variable == 'Word_conc' ~ 'Word concreteness',
+      variable == 'Ref_coh' ~ 'Referential cohesion',
+      variable == 'Lexical_dens' ~ 'Lexical density',
+      variable == 'Unique_con' ~ 'Ratio of unique content words',
+      variable == 'Determiners' ~ 'Ratio of determiners',
+      variable == 'Dem_att' ~ 'Ratio of demonstratives',
+      variable == 'Poss_2' ~ 'Ratio of possessive pronouns',
+      variable == 'Synt_comp2' ~ 'Syntactic complexity',
+      variable == 'Emot_sens' ~ 'Emotional sensitivity'
+    ) %>% fct_reorder(percentage)
+  ) %>% 
+  ggplot(aes(variable2,percentage*100)) +
   geom_col() +
   theme_few() +
   xlab('') +
   ylab('variable percentage') +
   ylim(0,60) +
   coord_flip() +
-  ggtitle('Control / SIPD ~ text variables')
+  ggtitle('Control / SIPD ~\ntext variables')
 
 p3 = h2o.varimp(fit3) %>% 
   as_tibble() %>% 
-  mutate(variable = fct_reorder(variable,percentage)) %>% 
-  ggplot(aes(variable,percentage*100)) +
+  mutate(
+    variable2 = case_when(
+      variable == 'Narrativity' ~ 'Narrativity',
+      variable == 'Syntac_simp' ~ 'Syntactic simplicity',
+      variable == 'Word_conc' ~ 'Word concreteness',
+      variable == 'Ref_coh' ~ 'Referential cohesion',
+      variable == 'Lexical_dens' ~ 'Lexical density',
+      variable == 'Unique_con' ~ 'Ratio of unique content words',
+      variable == 'Determiners' ~ 'Ratio of determiners',
+      variable == 'Dem_att' ~ 'Ratio of demonstratives',
+      variable == 'Poss_2' ~ 'Ratio of possessive pronouns',
+      variable == 'Synt_comp2' ~ 'Syntactic complexity',
+      variable == 'Emot_sens' ~ 'Emotional sensitivity'
+    ) %>% fct_reorder(percentage)
+  ) %>% 
+  ggplot(aes(variable2,percentage*100)) +
   geom_col() +
   theme_few() +
   xlab('') +
   ylab('variable percentage') +
   ylim(0,60) +
   coord_flip() +
-  ggtitle('SIPD / Schizophrenia ~ text variables')
+  ggtitle('SIPD / Schizophrenia ~\ntext variables')
 
 # build a largely superfluous plot that shows the auc-s as three columns
 best_model_auc = 
@@ -260,8 +312,8 @@ p4 = best_model_auc %>%
   ggplot(aes(model,auc)) +
   geom_col() +
   theme_few() +
-  ylim(0,1) +
-  ylab('area under the curve')
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.1), name = 'area under the curve') 
+  
 
 # patchwork the four plots together
 ( p1 + p2 + p3 ) / ( p4 + plot_spacer() + plot_spacer())

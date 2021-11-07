@@ -6,7 +6,7 @@ set.seed(1337)
 
 # -- header -- #
 
-setwd('~/Github/KapitanyRacz2022')
+setwd('~/Github/KapitanyBokkHarangozoSolteszRacz2022/')
 
 library(tidyverse) # fake sql and pipes
 library(magrittr) # self pipe

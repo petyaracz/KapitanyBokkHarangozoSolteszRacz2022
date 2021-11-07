@@ -1,0 +1,12 @@
+text_var,var_name
+'Narrativity','Narrativity'
+'Syntac_simp','Syntactic simplicity'
+'Word_conc','Word concreteness'
+'Ref_coh','Referential cohesion'
+'Lexical_dens','Lexical density'
+'Unique_con','Ratio of unique content words'
+'Determiners','Ratio of determiners'
+'Dem_att','Ratio of demonstratives'
+'Poss_2','Ratio of possessive pronouns'
+'Synt_comp2','Syntactic complexity'
+'Emot_sens','Emotional sensitivity'
