@@ -19,6 +19,12 @@ library(patchwork) # <3
 
 d = read_tsv('data/data_tidy.tsv') # see data_setup
 
+d %<>%
+  mutate(
+    last_use_type = fct_reorder(last_use_type, Last_use),
+    frequency_type = fct_reorder(frequency_type, Frequency)
+  )
+
 text_vars = c(
   'Narrativity',
   'Syntac_simp',
@@ -43,6 +49,14 @@ outcome_vars = c(
   'OLIFE_Imp'
 )
 
+med_vars = c(
+  'substance_lifetime_type',
+  'substance_most_frequent_type',
+  'last_use_type',
+  'frequency_type',
+  'medication_type' 
+)
+
 # -- centering -- #
 
 # scale numeric variables and then shuffle the deck
@@ -63,7 +77,7 @@ dco = d2 %>%
 # text variables only
 dct = d2 %>% 
   filter(id != 'ri20re') %>% # this person didn't write anything :(
-  select(group_type,all_of(text_vars)) %>% 
+  select(group_type,medication_type,substance_most_frequent_type,all_of(text_vars)) %>% 
   rename(
     'Syntactic simplicity' = Syntac_simp,
     'Word concreteness' = Word_conc,
@@ -77,7 +91,29 @@ dct = d2 %>%
     'Emotional sensitivity' = Emot_sens
   )
 
+# med variables only
+dcm = d2 %>% 
+  select(group_type,all_of(med_vars))
+
 # --- vis --- #
+
+### medical variables
+dcm %>% 
+  count(group_type,substance_lifetime_type) %>% 
+  pivot_wider(names_from = substance_lifetime_type, values_from = n, values_fill = 0)
+
+mtables = dcm %>% 
+  pivot_longer(-group_type) %>% 
+  group_by(name) %>% 
+  nest() %>%
+  mutate(
+    table = map(data, ~ 
+                  count(.,group_type,value) %>% 
+                  pivot_wider(names_from = value, values_from = n, values_fill = 0)
+                )
+  )
+
+mtables$table %>% knitr::kable()
 
 ### Dep. Outcomes
 
@@ -109,13 +145,13 @@ ggsave('vis/des_olef_groups.pdf', width = 12, height = 6)
 
 ## correlation matrix of predictors:
 dct %>% 
-  select(-group_type) %>% 
+  select(-group_type,-medication_type,-substance_most_frequent_type) %>% 
   cor() %>% 
   corrplot::corrplot(method = 'number')
 
 ## ~ per group:
 cors = dct %>% 
-  group_by(group_type) %>% 
+  group_by(group_type,medication_type,substance_most_frequent_type) %>% 
   nest() %>% 
   mutate(
     cor = map(data, ~ cor(.)),
@@ -152,7 +188,7 @@ ggsave(ac, file = 'vis/all_cor.pdf', width = 12, height = 14)
 
 ## predictors across groups:
 dct %>% 
-  pivot_longer(- group_type) %>% 
+  pivot_longer(- c(group_type,medication_type,substance_most_frequent_type)) %>% 
   ggplot(aes(group_type, value)) +
   # geom_tufteboxplot() +
   geom_half_violin() +
@@ -167,3 +203,23 @@ dct %>%
   ylab('scaled value') +
   xlab('group type')
 ggsave('vis/text_var_groups.pdf', width = 12, height = 12)
+
+## predictors across medication
+dct %>% 
+  filter(medication_type %in% c('antipsychotics','benzodiazepines')) %>% 
+  pivot_longer(- c(group_type,medication_type,substance_most_frequent_type)) %>% 
+  ggplot(aes(medication_type, value)) +
+  # geom_tufteboxplot() +
+  geom_half_violin() +
+  geom_half_boxplot(width = .1) +
+  geom_half_dotplot() +
+  theme_bw() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  ) +
+  facet_wrap( ~ name, ncol = 3) +
+  ylab('scaled value') +
+  xlab('med type')
+
+## 
