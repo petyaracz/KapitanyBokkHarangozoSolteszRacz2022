@@ -22,7 +22,8 @@ d = read_tsv('data/data_tidy.tsv') # see data_setup
 d %<>%
   mutate(
     last_use_type = fct_reorder(last_use_type, Last_use),
-    frequency_type = fct_reorder(frequency_type, Frequency)
+    frequency_type = fct_reorder(frequency_type, Frequency),
+    sipd_cannabis = substance_most_frequent_type == 'cannabis' & frequency_type %in% c('once a week', '1+ a week')
   )
 
 text_vars = c(
@@ -77,7 +78,7 @@ dco = d2 %>%
 # text variables only
 dct = d2 %>% 
   filter(id != 'ri20re') %>% # this person didn't write anything :(
-  select(group_type,medication_type,substance_most_frequent_type,all_of(text_vars)) %>% 
+  select(group_type,medication_type,substance_most_frequent_type,sipd_cannabis,all_of(text_vars)) %>% 
   rename(
     'Syntactic simplicity' = Syntac_simp,
     'Word concreteness' = Word_conc,
@@ -98,6 +99,7 @@ dcm = d2 %>%
 # --- vis --- #
 
 ### medical variables
+
 dcm %>% 
   count(group_type,substance_lifetime_type) %>% 
   pivot_wider(names_from = substance_lifetime_type, values_from = n, values_fill = 0)
@@ -123,6 +125,16 @@ dco %>%
   cor() %>% 
   corrplot::corrplot(method = 'number')
 
+## pca of predictors
+dco_pca = dco %>% 
+  select(all_of(outcome_vars)) %>% 
+  prcomp()
+  
+p1 = factoextra::fviz_eig(dco_pca)
+p2 = factoextra::fviz_pca_var(dco_pca)
+p1 + p2
+ggsave('vis/depression_pca.pdf', width = 12, height = 6)
+
 ## predictors across groups:
 dco %>% 
   pivot_longer(- group_type) %>% 
@@ -145,9 +157,19 @@ ggsave('vis/des_olef_groups.pdf', width = 12, height = 6)
 
 ## correlation matrix of predictors:
 dct %>% 
-  select(-group_type,-medication_type,-substance_most_frequent_type) %>% 
+  select(-group_type,-medication_type,-substance_most_frequent_type,-sipd_cannabis) %>% 
   cor() %>% 
   corrplot::corrplot(method = 'number')
+
+## pca of predictors
+dct_pca = dct %>% 
+  select(-group_type,-medication_type,-substance_most_frequent_type,-sipd_cannabis) %>% 
+  prcomp()
+
+p3 = factoextra::fviz_eig(dct_pca)
+p4 = factoextra::fviz_pca_var(dct_pca)
+p3 + p4
+ggsave('vis/text_pca.pdf', width = 12, height = 6)
 
 ## ~ per group:
 cors = dct %>% 
@@ -188,7 +210,7 @@ ggsave(ac, file = 'vis/all_cor.pdf', width = 12, height = 14)
 
 ## predictors across groups:
 dct %>% 
-  pivot_longer(- c(group_type,medication_type,substance_most_frequent_type)) %>% 
+  pivot_longer(- c(group_type,medication_type,substance_most_frequent_type,sipd_cannabis)) %>% 
   ggplot(aes(group_type, value)) +
   # geom_tufteboxplot() +
   geom_half_violin() +
@@ -204,9 +226,70 @@ dct %>%
   xlab('group type')
 ggsave('vis/text_var_groups.pdf', width = 12, height = 12)
 
-## predictors across medication
+### Medication and substance use
+
+## substance freq
+d %>% 
+  filter(substance_most_frequent_type %in% c('cannabis','alcohol')) %>% 
+  select(group_type,substance_most_frequent_type,frequency_type) %>% 
+  ggplot(aes(frequency_type)) +
+  geom_bar() +
+  facet_wrap( ~ substance_most_frequent_type + group_type, ncol = 3) +
+  scale_y_continuous(breaks = seq(1,8,2)) +
+  theme_few() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.title.x = element_blank())
+
+ggsave('vis/substance_freq.pdf', width = 6, height = 6)
+
+d %>% 
+  filter(group_type == 'SIPD') %>% 
+  count(substance_most_frequent_type,frequency_type)
+
+## predictors across cannabis in sipd
 dct %>% 
-  filter(medication_type %in% c('antipsychotics','benzodiazepines')) %>% 
+  filter(group_type == 'SIPD') %>% 
+  pivot_longer(- c(group_type,medication_type,substance_most_frequent_type,sipd_cannabis)) %>%
+  mutate(sipd_cannabis2 = ifelse(sipd_cannabis, 'infrequent/\nno use', 'frequent use')) %>% 
+  ggplot(aes(sipd_cannabis2, value)) +
+  # geom_tufteboxplot() +
+  geom_half_violin() +
+  geom_half_boxplot(width = .1) +
+  geom_half_dotplot() +
+  theme_bw() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  ) +
+  facet_wrap( ~ name, ncol = 3) +
+  ylab('scaled value') +
+  xlab('cannabis use') +
+  ggtitle('Text variables across cannabis use in SIPD group')
+
+ggsave('vis/text_var_sipd.pdf', width = 12, height = 12)
+
+## medication use
+d %>% 
+  mutate(medication_type2 = ifelse(is.na(medication_type), 'none', medication_type) %>% 
+           fct_relevel('antipsychotics','benzodiazepines','both','other','none')) %>% 
+  ggplot(aes(medication_type2)) +
+  geom_bar() +
+  facet_wrap( ~ group_type, ncol = 3) +
+  scale_y_continuous(breaks = seq(1,8,2)) +
+  theme_few() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.title.x = element_blank())
+
+ggsave('vis/medication_freq.pdf', width = 6, height = 6)
+
+## sipd: medication and substance use
+
+d %>% 
+  filter(group_type == 'SIPD') %>% 
+  count(medication_type,substance_most_frequent_type) %>% 
+  pivot_wider(names_from = substance_most_frequent_type, values_from =  n, values_fill = 0) %>% knitr::kable(format = 'simple')
+
+## predictors across medication in sipd
+dct %>% 
+  filter(group_type == 'SIPD', medication_type %in% c('antipsychotics','benzodiazepines')) %>% 
   pivot_longer(- c(group_type,medication_type,substance_most_frequent_type)) %>% 
   ggplot(aes(medication_type, value)) +
   # geom_tufteboxplot() +
@@ -220,6 +303,8 @@ dct %>%
   ) +
   facet_wrap( ~ name, ncol = 3) +
   ylab('scaled value') +
-  xlab('med type')
+  xlab('medication type') +
+  ggtitle('Text variables across medication type in SIPD group')
 
-## 
+ggsave('vis/text_var_sipd2.pdf', width = 12, height = 12)
+
