@@ -236,8 +236,9 @@ d %>%
   geom_bar() +
   facet_wrap( ~ substance_most_frequent_type + group_type, ncol = 3) +
   scale_y_continuous(breaks = seq(1,8,2)) +
-  theme_few() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.title.x = element_blank())
+  theme_bw() +
+  theme(axis.title = element_blank()) +
+  coord_flip()
 
 ggsave('vis/substance_freq.pdf', width = 6, height = 6)
 
@@ -271,14 +272,16 @@ ggsave('vis/text_var_sipd.pdf', width = 12, height = 12)
 d %>% 
   mutate(medication_type2 = ifelse(is.na(medication_type), 'none', medication_type) %>% 
            fct_relevel('antipsychotics','benzodiazepines','both','other','none')) %>% 
+  filter(!is.na(medication_type)) %>% 
   ggplot(aes(medication_type2)) +
   geom_bar() +
   facet_wrap( ~ group_type, ncol = 3) +
-  scale_y_continuous(breaks = seq(1,8,2)) +
-  theme_few() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.title.x = element_blank())
+  # scale_x_continuous(breaks = seq(1,8,2)) +
+  theme_bw() +
+  theme(axis.title = element_blank()) +
+  coord_flip()
 
-ggsave('vis/medication_freq.pdf', width = 6, height = 6)
+ggsave('vis/medication_freq.pdf', width = 6, height = 3)
 
 ## sipd: medication and substance use
 
