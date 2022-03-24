@@ -78,7 +78,7 @@ dco = d2 %>%
 # text variables only
 dct = d2 %>% 
   filter(id != 'ri20re') %>% # this person didn't write anything :(
-  select(group_type,medication_type,substance_most_frequent_type,sipd_cannabis,all_of(text_vars)) %>% 
+  select(group_type,medication_type,Antip_stand,Last_med_intake,substance_most_frequent_type,sipd_cannabis,all_of(text_vars)) %>% 
   rename(
     'Syntactic simplicity' = Syntac_simp,
     'Word concreteness' = Word_conc,
@@ -226,11 +226,11 @@ dct %>%
   xlab('group type')
 ggsave('vis/text_var_groups.pdf', width = 12, height = 12)
 
-### Medication and substance use
+### Medication and substance use ###
 
-## substance freq
-d %>% 
-  filter(substance_most_frequent_type %in% c('cannabis','alcohol')) %>% 
+## substance use
+p1 = d %>% 
+  filter(substance_most_frequent_type %in% c('cannabis','alcohol')) %>%
   select(group_type,substance_most_frequent_type,frequency_type) %>% 
   ggplot(aes(frequency_type)) +
   geom_bar() +
@@ -240,62 +240,30 @@ d %>%
   theme(axis.title = element_blank()) +
   coord_flip()
 
-ggsave('vis/substance_freq.pdf', width = 6, height = 6)
-
-d %>% 
-  filter(group_type == 'SIPD') %>% 
-  count(substance_most_frequent_type,frequency_type)
-
-## predictors across cannabis in sipd
-dct %>% 
-  filter(group_type == 'SIPD') %>% 
-  pivot_longer(- c(group_type,medication_type,substance_most_frequent_type,sipd_cannabis)) %>%
-  mutate(sipd_cannabis2 = ifelse(sipd_cannabis, 'infrequent/\nno use', 'frequent use')) %>% 
-  ggplot(aes(sipd_cannabis2, value)) +
-  # geom_tufteboxplot() +
-  geom_half_violin() +
-  geom_half_boxplot(width = .1) +
-  geom_half_dotplot() +
-  theme_bw() +
-  theme(
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank()
-  ) +
-  facet_wrap( ~ name, ncol = 3) +
-  ylab('scaled value') +
-  xlab('cannabis use') +
-  ggtitle('Text variables across cannabis use in SIPD group')
-
-ggsave('vis/text_var_sipd.pdf', width = 12, height = 12)
-
-## medication use
-d %>% 
-  mutate(medication_type2 = ifelse(is.na(medication_type), 'none', medication_type) %>% 
-           fct_relevel('antipsychotics','benzodiazepines','both','other','none')) %>% 
+## med use
+p2 = d %>% 
+  mutate(
+    medication_type2 = ifelse(is.na(medication_type), 'none', medication_type) %>% 
+      fct_relevel('none','other','both','benzodiazepines','antipsychotics'),
+    medication = 'medication'
+  ) %>% 
   filter(!is.na(medication_type)) %>% 
   ggplot(aes(medication_type2)) +
   geom_bar() +
-  facet_wrap( ~ group_type, ncol = 3) +
-  # scale_x_continuous(breaks = seq(1,8,2)) +
+  facet_wrap( ~ medication + group_type, ncol = 3) +
+  # scale_x_discrete(position = 'top') +
   theme_bw() +
+  # scale_y_continuous(breaks = seq(1,8,2)) +
   theme(axis.title = element_blank()) +
   coord_flip()
 
-ggsave('vis/medication_freq.pdf', width = 6, height = 3)
+p1 + p2 + plot_layout(heights = c(3,1))
+ggsave('vis/substance_sum.pdf', height = 9, width = 6)
 
-## sipd: medication and substance use
-
-d %>% 
-  filter(group_type == 'SIPD') %>% 
-  count(medication_type,substance_most_frequent_type) %>% 
-  pivot_wider(names_from = substance_most_frequent_type, values_from =  n, values_fill = 0) %>% knitr::kable(format = 'simple')
-
-## predictors across medication in sipd
-dct %>% 
-  filter(group_type == 'SIPD', medication_type %in% c('antipsychotics','benzodiazepines')) %>% 
-  pivot_longer(- c(group_type,medication_type,substance_most_frequent_type)) %>% 
-  ggplot(aes(medication_type, value)) +
-  # geom_tufteboxplot() +
+## med use adjusted
+p3 = d %>% 
+  filter(group_type != 'control') %>% 
+  ggplot(aes(group_type,Antip_stand)) +
   geom_half_violin() +
   geom_half_boxplot(width = .1) +
   geom_half_dotplot() +
@@ -304,10 +272,90 @@ dct %>%
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank()
   ) +
-  facet_wrap( ~ name, ncol = 3) +
-  ylab('scaled value') +
-  xlab('medication type') +
-  ggtitle('Text variables across medication type in SIPD group')
+  xlab('group') +
+  ylab('standardised dosage')
 
-ggsave('vis/text_var_sipd2.pdf', width = 12, height = 12)
+## med use   
+p4 = d %>% 
+  filter(group_type != 'control') %>% 
+  ggplot(aes(group_type,Last_med_intake)) +
+  geom_half_violin() +
+  geom_half_boxplot(width = .25) +
+  geom_half_dotplot() +
+  theme_bw() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  ) +
+  xlab('group') +
+  ylab('last intake')
 
+p3 + p4
+ggsave('vis/medication_sum.pdf', height = 6, width = 9)
+
+## groups vs vars
+dct %>% 
+  select(group_type,substance_most_frequent_type,Antip_stand,Last_med_intake,`Syntactic complexity`,`Syntactic simplicity`,`Emotional sensitivity`) %>% 
+  pivot_longer(-c(group_type,substance_most_frequent_type,Antip_stand,Last_med_intake)) %>% 
+  ggplot(aes(group_type,value)) +
+  geom_half_violin() +
+  geom_half_boxplot(width = .1) +
+  geom_half_dotplot() +
+  theme_bw() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  ) +
+  facet_wrap( ~ name ) +
+  xlab('group') +
+  ylab('scaled value')
+ggsave('vis/three_vars1.pdf', width = 14, height = 4)
+
+## med use vs vars
+dct %>% 
+  filter(group_type != 'control') %>% 
+  select(group_type,substance_most_frequent_type,Antip_stand,Last_med_intake,`Syntactic complexity`,`Syntactic simplicity`,`Emotional sensitivity`) %>% 
+  pivot_longer(-c(group_type,substance_most_frequent_type,Antip_stand,Last_med_intake)) %>% 
+  ggplot(aes(Antip_stand,value)) +
+  geom_point(aes(shape = group_type)) +
+  geom_smooth(method = 'lm') +
+  facet_wrap( ~ name ) +
+  # guides(legend = 'group') +
+  theme_bw() +
+  xlab('standardised dosage') +
+  ylab('scaled value')
+ggsave('vis/three_vars2.pdf', width = 9, height = 4)
+
+## med last vs vars
+dct %>% 
+  filter(group_type != 'control') %>% 
+  select(group_type,substance_most_frequent_type,Antip_stand,Last_med_intake,`Syntactic complexity`,`Syntactic simplicity`,`Emotional sensitivity`) %>% 
+  pivot_longer(-c(group_type,substance_most_frequent_type,Antip_stand,Last_med_intake)) %>% 
+  ggplot(aes(Last_med_intake,value)) +
+  geom_point(aes(shape = group_type)) +
+  geom_smooth(method = 'lm') +
+  facet_wrap( ~ name ) +
+  # guides(legend = 'group') +
+  theme_bw() +
+  xlab('last intake') +
+  ylab('scaled value')
+ggsave('vis/three_vars3.pdf', width = 9, height = 4)
+
+## substance vs vars
+dct %>% 
+  filter(substance_most_frequent_type %in% c('alcohol','cannabis')) %>% 
+  select(group_type,substance_most_frequent_type,Antip_stand,Last_med_intake,`Syntactic complexity`,`Syntactic simplicity`,`Emotional sensitivity`) %>% 
+  pivot_longer(-c(group_type,substance_most_frequent_type,Antip_stand,Last_med_intake)) %>% 
+  ggplot(aes(substance_most_frequent_type,value)) +
+  geom_half_violin() +
+  geom_half_boxplot(width = .1) +
+  geom_half_dotplot() +
+  theme_bw() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  ) +
+  facet_wrap( ~ name ) +
+  xlab('favourite substance') +
+  ylab('scaled value')
+ggsave('vis/three_vars4.pdf', width = 14, height = 4)

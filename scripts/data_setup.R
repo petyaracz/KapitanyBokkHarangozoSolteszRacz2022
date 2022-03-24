@@ -15,7 +15,7 @@ library(glue) # for pythonesque string handling
 # -- read-in -- #
 
 # d = read_csv('data/psychosis_linguistic_IDs.csv') # data
-d = read_csv('data/psychosis_linguistic_revised.csv')
+d = read_csv('data/psychosis_linguistic_revised4.csv')
 id = read_tsv('data/pairs.tsv') # matched id-s
 
 # -- wrangling -- #
